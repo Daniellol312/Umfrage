@@ -1,59 +1,40 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Umfrage</title>
-</head>
-<body>
-  <h1>Umfrage: Welches ist dein Lieblingsgetränk?</h1>
-  <form id="pollForm">
-    <label>
-      <input type="radio" name="option" value="Kaffee" required> Kaffee
-    </label><br>
-    <label>
-      <input type="radio" name="option" value="Tee"> Tee
-    </label><br>
-    <label>
-      <input type="radio" name="option" value="Wasser"> Wasser
-    </label><br>
-    <button type="submit">Abstimmen</button>
-  </form>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js"></script>
+<script>
+  // Firebase konfigurieren
+  const firebaseConfig = {
+    apiKey: "DEINE_API_KEY",
+    authDomain: "DEINE_AUTH_DOMAIN",
+    databaseURL: "DEINE_DATABASE_URL",
+    projectId: "DEINE_PROJECT_ID",
+    storageBucket: "DEINE_STORAGE_BUCKET",
+    messagingSenderId: "DEINE_MESSAGING_SENDER_ID",
+    appId: "DEINE_APP_ID"
+  };
 
-  <h2>Ergebnisse:</h2>
-  <div id="results"></div>
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-  <script>
-    const form = document.getElementById('pollForm');
-    const resultsDiv = document.getElementById('results');
-
-    // Ergebnisse laden
-    async function loadResults() {
-      const response = await fetch('/results');
-      const data = await response.json();
-      resultsDiv.innerHTML = Object.entries(data)
-        .map(([option, votes]) => `${option}: ${votes} Stimmen`)
-        .join('<br>');
-    }
-
-    // Abstimmung absenden
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const formData = new FormData(form);
-      const option = formData.get('option');
-
-      await fetch('/vote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ option }),
-      });
-
-      form.reset();
-      loadResults();
-    });
-
-    // Ergebnisse beim Laden der Seite anzeigen
+  // Abstimmung speichern
+  const form = document.getElementById('pollForm');
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const option = new FormData(form).get('option');
+    const ref = db.ref('votes/' + option);
+    ref.transaction((current) => (current || 0) + 1);
+    form.reset();
     loadResults();
-  </script>
-</body>
-</html>
+  });
+
+  // Ergebnisse anzeigen
+  async function loadResults() {
+    const snapshot = await db.ref('votes').get();
+    const results = snapshot.val() || {};
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML = Object.entries(results)
+      .map(([option, votes]) => `${option}: ${votes} Stimmen`)
+      .join('<br>');
+  }
+
+  loadResults();
+</script>
