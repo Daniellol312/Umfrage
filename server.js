@@ -1,26 +1,31 @@
-const express = require('express');
-const app = express();
-const bodyParser = require('body-parser');
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
 
-app.use(bodyParser.json());
+// Firebase konfigurieren
+const firebaseConfig = {
+  apiKey: "AIzaSyAkf5iFMbUU3dqOqiNoktXrNUcOQQwLH5A",
+  authDomain: "nr-1-41dcd.firebaseapp.com",
+  databaseURL: "https://nr-1-41dcd-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "nr-1-41dcd",
+  storageBucket: "nr-1-41dcd.firebasestorage.app",
+  messagingSenderId: "666646311109",
+  appId: "1:666646311109:web:68a4a2180a9172bed8c0ac",
+  measurementId: "G-T4N8SD91K9"
+};
 
-const votes = { Kaffee: 0, Tee: 0, Wasser: 0 };
+// Firebase initialisieren
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-// Stimmen speichern
-app.post('/vote', (req, res) => {
-  const { option } = req.body;
-  if (votes[option] !== undefined) {
-    votes[option]++;
-    res.status(200).send('Abstimmung gespeichert');
-  } else {
-    res.status(400).send('Ungültige Option');
-  }
-});
+// Ergebnisse anzeigen
+async function loadResults() {
+  const snapshot = await get(ref(db, 'votes'));
+  const results = snapshot.val() || {};
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = Object.entries(results)
+    .map(([option, votes]) => `${option}: ${votes} Stimmen`)
+    .join('<br>');
+}
 
-// Ergebnisse senden
-app.get('/results', (req, res) => {
-  res.json(votes);
-});
+loadResults();
 
-const PORT = 3000;
-app.listen(PORT, () => console.log(`Server läuft auf http://localhost:${PORT}`));
